@@ -3,6 +3,7 @@ from Agent.dqn_nature import DeepQNetwork
 import os
 import random as rd
 from vis_env import VisEnv
+import tensorflow as tf
 
 
 def action_transform(a, action_dim):
@@ -14,13 +15,19 @@ def action_transform(a, action_dim):
         str[j] = int(str[j])
     return str
 
+def summarize(reward, i, summary_writer, tag):
+  summary = tf.Summary()
+  summary.value.add(tag=tag, simple_value=reward)
+  summary_writer.add_summary(summary, i)
+  summary_writer.flush()
 
-EPISODE = 1000
+
+EPISODE = 100
 STEP = 150
 
 def main(dir):
-    # agent = DeepQNetwork(n_actions=4,n_features=2)
-    agent = DQN(n_actions=16)
+    agent = DeepQNetwork(n_actions=16,n_features=[8,60,2])
+    # agent = DQN(n_actions=16)
     env = VisEnv()
     for episode in range(0,EPISODE):
         # ==== INITIALIZE ==== #
@@ -54,6 +61,8 @@ def main(dir):
         ep_sum_reward = sum(sum_reward)
         print("Episode:",episode," Reward:",ep_sum_reward," steps:", i)
 
+        summarize(ep_sum_reward, episode, agent.writer, 'Rewards')
+        
         if env.test:
             env.write_summary(episode, dir)
 

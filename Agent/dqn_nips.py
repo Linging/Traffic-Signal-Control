@@ -40,9 +40,10 @@ class DQN():
         self.writer = tf.summary.FileWriter(self.logdir, self.session.graph)
 
         self.experience_replay = ReplayMemoryFast(memory_size, batch_size)
+        self.reward_clipping = 2
 
     def create_Q_network(self):
-        conv_W1 = self.weight_variable([3,3,2,32])
+        conv_W1 = self.weight_variable([5,5,2,32])
         conv_b1 = tf.random_normal([32])
         conv_W2 = self.weight_variable([3,3,32,64])
         conv_b2 = tf.random_normal([64])
