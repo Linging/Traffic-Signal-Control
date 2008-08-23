@@ -12,6 +12,7 @@ class DQN():
                 replace_target_iter=300,
                 memory_size=500,
                 batch_size=32,
+                tensorboard_logs = "./logs",
                 e_greedy_increment=None,
                 output_graph=False,
                 dueling=False,
@@ -26,7 +27,7 @@ class DQN():
         self.memory_size = memory_size
         self.batch_size = batch_size
         self.lr = learning_rate
-        self.logdir = "./dqn_log"
+        self.logdir = tensorboard_logs
 
         self.dueling = False
 
@@ -43,23 +44,24 @@ class DQN():
         self.reward_clipping = 2
 
     def create_Q_network(self):
+        tf.reset_default_graph()
         conv_W1 = self.weight_variable([5,5,2,32])
         conv_b1 = tf.random_normal([32])
         conv_W2 = self.weight_variable([3,3,32,64])
         conv_b2 = tf.random_normal([64])
         conv_W3 = self.weight_variable([3,3,64,64])
         conv_b3 = tf.random_normal([64])
-        fc_W1 = self.weight_variable([120 * 64, 64])
-        fc_b1 = tf.random_normal([64])
-        fc_W2 = self.weight_variable([64, self.action_dim])
+        fc_W1 = self.weight_variable([80 * 64, 128])
+        fc_b1 = tf.random_normal([128])
+        fc_W2 = self.weight_variable([128, self.action_dim])
         fc_b2 = tf.random_normal([self.action_dim])
         self.state_input = tf.placeholder("float", [None, 8, 60, 2])
         conv_layer1 = tf.nn.relu(tf.nn.conv2d(self.state_input, conv_W1, strides=[1,1,1,1], padding='SAME') + conv_b1)
         max_pool1 = tf.nn.max_pool(conv_layer1, ksize=[1,1,2,1], strides=[1,1,2,1], padding='SAME')
         conv_layer2 = tf.nn.relu(tf.nn.conv2d(max_pool1, conv_W2, strides=[1,1,1,1], padding='SAME') + conv_b2)
-        max_pool2 = tf.nn.max_pool(conv_layer2, ksize=[1,1,2,1], strides=[1,1,2,1], padding='SAME')
+        max_pool2 = tf.nn.max_pool(conv_layer2, ksize=[1,1,3,1], strides=[1,1,3,1], padding='SAME')
         conv_layer3 =  tf.nn.relu(tf.nn.conv2d(max_pool2, conv_W3, strides=[1,1,1,1], padding='SAME') + conv_b3)
-        conv_layer3_flatten = tf.reshape(conv_layer3, [-1, 120 * 64])
+        conv_layer3_flatten = tf.reshape(conv_layer3, [-1, 80 * 64])
         fc1 = tf.nn.relu(tf.matmul(conv_layer3_flatten, fc_W1) + fc_b1)
         self.Q_value = tf.matmul(fc1, fc_W2) + fc_b2
 
@@ -95,7 +97,7 @@ class DQN():
     def create_training_method(self):
         self.action_input = tf.placeholder("float", [None, self.action_dim])
         self.y_input = tf.placeholder("float", [None])
-        # Incompatible shapes: [!!128, 16] vs.[32, 16]
+
         Q_action = tf.reduce_sum(tf.multiply(self.Q_value, self.action_input), reduction_indices = 1)
         self.loss = tf.reduce_mean(tf.square(self.y_input - Q_action))
         self.optimizer = tf.train.AdamOptimizer(self.lr).minimize(self.loss)
@@ -121,7 +123,7 @@ class DQN():
         y_batch = []
 
         Q_value_batch = self.Q_value.eval(feed_dict = {self.state_input:batch_s_})
-        Q_value_batch = Q_value_batch[:32]
+
         for i in range(0,self.batch_size):
             done = minibatch[i][4]
             if done:

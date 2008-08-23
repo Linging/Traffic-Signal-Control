@@ -22,19 +22,19 @@ def summarize(reward, i, summary_writer, tag):
   summary_writer.flush()
 
 
-EPISODE = 100
+EPISODE = 200
 STEP = 150
 
-def main(dir):
-    agent = DeepQNetwork(n_actions=16,n_features=[8,60,2])
-    # agent = DQN(n_actions=16)
+def main(Agent, csv_summary):
+    # agent = DeepQNetwork(n_actions=16,n_features=[8,60,2])
+    agent = Agent
     env = VisEnv()
     for episode in range(0,EPISODE):
         # ==== INITIALIZE ==== #
         env.reset()
         print("Episode:",episode,"Start")
 
-        if episode >= 30 and episode % 10 == 0: env.test = True
+        if episode >= 100 and episode % 10 == 0: env.test = True
         state = env.state
 
         sum_reward = []
@@ -62,15 +62,24 @@ def main(dir):
         print("Episode:",episode," Reward:",ep_sum_reward," steps:", i)
 
         summarize(ep_sum_reward, episode, agent.writer, 'Rewards')
-        
+
         if env.test:
-            env.write_summary(episode, dir)
+            env.write_summary(episode, csv_summary)
+
+for learn_rate in [1e-5, 1e-4, 1e-3, 1e-2]:
+    for replay_size in [3000, 5000]:
+        for batch_size in [16, 32]:
+            dir = "lr=" + str(learn_rate) + " rep=" \
+                  + str(replay_size) + " bat=" + str(batch_size)
+            csv_summary = "./dqn/" + dir
+            tensorboard_logs = "./logs/" + dir
+            try:
+                os.makedirs(csv_summary)
+            except:
+                print("Dir Exist!")
+
+            Agent = DQN(16,learning_rate=learn_rate,memory_size=replay_size,
+                        batch_size=batch_size, tensorboard_logs=tensorboard_logs)
 
 
-dir = "./dqn"
-try:
-    os.makedirs(dir)
-except:
-    print("Dir Exist!")
-
-main(dir)
+            main(Agent, csv_summary)

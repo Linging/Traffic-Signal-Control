@@ -11,11 +11,11 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="train_vis.py" pinned="false" current-in-tab="true">
+      <file leaf-file-name="train_vis.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/train_vis.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="753">
-              <caret line="64" column="8" selection-start-line="64" selection-start-column="8" selection-end-line="64" selection-end-column="8" />
+            <state relative-caret-position="1955">
+              <caret line="85" selection-start-line="85" selection-end-line="85" />
               <folding>
                 <element signature="e#0#30#0" expanded="true" />
               </folding>
@@ -23,13 +23,13 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="dqn_nips.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/Agent/dqn_nips.py">
+      <file leaf-file-name="vis_env.py" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/vis_env.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="3513">
-              <caret line="156" column="45" lean-forward="true" selection-start-line="156" selection-start-column="45" selection-end-line="156" selection-end-column="45" />
+            <state relative-caret-position="368">
+              <caret line="135" column="58" selection-start-line="135" selection-start-column="58" selection-end-line="135" selection-end-column="58" />
               <folding>
-                <element signature="e#0#23#0" expanded="true" />
+                <element signature="e#0#18#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -49,6 +49,8 @@
       <find>learn_step_counter</find>
       <find>epsilon</find>
       <find>n_actions</find>
+      <find>memory_size</find>
+      <find>dir</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -58,14 +60,14 @@
   <component name="IdeDocumentHistory">
     <option name="CHANGED_PATHS">
       <list>
-        <option value="$PROJECT_DIR$/vis_env.py" />
         <option value="$PROJECT_DIR$/Agent/dqn_nips.py" />
-        <option value="$PROJECT_DIR$/Agent/dqn_nature.py" />
         <option value="$PROJECT_DIR$/train_vis.py" />
+        <option value="$PROJECT_DIR$/Agent/dqn_nature.py" />
+        <option value="$PROJECT_DIR$/vis_env.py" />
       </list>
     </option>
   </component>
-  <component name="ProjectFrameBounds" extendedState="1">
+  <component name="ProjectFrameBounds">
     <option name="x" value="-8" />
     <option name="y" value="-8" />
     <option name="width" value="1936" />
@@ -176,12 +178,12 @@
     <frame x="-8" y="-8" width="1936" height="1056" extended-state="0" />
     <editor active="true" />
     <layout>
-      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.24973656" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.24973656" />
       <window_info anchor="bottom" id="TODO" order="6" />
       <window_info anchor="bottom" id="Event Log" order="7" side_tool="true" />
-      <window_info anchor="bottom" id="Run" order="2" weight="0.4074074" />
+      <window_info anchor="bottom" id="Run" order="2" weight="0.41067538" />
       <window_info anchor="bottom" id="Version Control" order="7" />
-      <window_info anchor="bottom" id="Python Console" order="7" weight="0.32897604" />
+      <window_info anchor="bottom" id="Python Console" order="7" weight="0.29411766" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info anchor="bottom" id="Terminal" order="7" weight="0.32897604" />
       <window_info anchor="bottom" id="Debug" order="3" weight="0.36165577" />
@@ -268,16 +270,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/vis_env.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="361">
-          <caret line="153" column="34" selection-start-line="153" selection-start-column="34" selection-end-line="153" selection-end-column="34" />
-          <folding>
-            <element signature="e#0#18#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://D:/Anaconda/Lib/site-packages/tensorflow/python/client/session.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="186">
@@ -295,16 +287,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Agent/dqn_nature.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="339">
-          <caret line="177" column="21" lean-forward="true" selection-start-line="177" selection-start-column="21" selection-end-line="177" selection-end-column="21" />
-          <folding>
-            <element signature="e#0#18#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/pg_control.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="253">
@@ -317,8 +299,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/Agent/dqn_nips.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="3513">
-          <caret line="156" column="45" lean-forward="true" selection-start-line="156" selection-start-column="45" selection-end-line="156" selection-end-column="45" />
+        <state relative-caret-position="1710">
+          <caret line="99" column="8" selection-start-line="99" selection-start-column="8" selection-end-line="99" selection-end-column="8" />
           <folding>
             <element signature="e#0#23#0" expanded="true" />
           </folding>
@@ -327,10 +309,30 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/train_vis.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="753">
-          <caret line="64" column="8" selection-start-line="64" selection-start-column="8" selection-end-line="64" selection-end-column="8" />
+        <state relative-caret-position="1955">
+          <caret line="85" selection-start-line="85" selection-end-line="85" />
           <folding>
             <element signature="e#0#30#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Agent/dqn_nature.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="575">
+          <caret line="78" column="87" selection-start-line="78" selection-start-column="73" selection-end-line="78" selection-end-column="87" />
+          <folding>
+            <element signature="e#0#18#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/vis_env.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="368">
+          <caret line="135" column="58" selection-start-line="135" selection-start-column="58" selection-end-line="135" selection-end-column="58" />
+          <folding>
+            <element signature="e#0#18#0" expanded="true" />
           </folding>
         </state>
       </provider>

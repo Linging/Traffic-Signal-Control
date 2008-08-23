@@ -1,9 +1,7 @@
 import numpy as np
 from win32com.client import Dispatch
 import pandas as pd
-import time
 import random
-import os
 
 n_lanes = 8
 n_cells = 60
@@ -52,8 +50,8 @@ class VisEnv():
         self.state = np.zeros([n_lanes,n_cells,frames])
         self.random_seed()
 
-    def random_seed(self):
-        self.simulation.RandomSeed = 7
+    def random_seed(self, seed = 7):
+        self.simulation.RandomSeed = seed
 
     def reconstruct_signal_groups(self):
         return np.array(self.signal_groups).reshape(-1,2)
@@ -89,7 +87,13 @@ class VisEnv():
         if self.action(actions):
             for _ in range(steps):
                 self.Vissim.Simulation.RunSingleStep()
+
             self.next_state, self.current_v = self.get_state()
+
+            # unstable Vissim will give nan data sometimes.
+            while np.isnan(self.current_v):
+                self.current_v = -1
+
         else:
             print("sigal set failed!")
 
@@ -129,7 +133,7 @@ class VisEnv():
             group[0].SetAttValue('type', 3)
 
     def down(self):
-        if self.pre_n_queued >= 60:
+        if self.pre_n_queued >= 50 or self.current_v == -1:
             return True
         else:
             return False
