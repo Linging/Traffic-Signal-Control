@@ -20,7 +20,7 @@ class DQN():
         self.replay_size = 2000
         self.batch_size = 32
         self.lr = 0.0001
-        self.logdir = "./log"
+        self.logdir = "./dqn_log"
 
         self.create_Q_network()
         self.create_training_method()

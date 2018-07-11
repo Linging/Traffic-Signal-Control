@@ -12,7 +12,7 @@ frames = 2
 class VisEnv():
     """docstring for VisEnv."""
     def __init__(self):
-        self.dir = "d:\\Vissim\\Example\\dqn.inp"
+        self.dir = "./dqn.inp"
 
         self.n_cross = 4
         self.n_lanes = 8

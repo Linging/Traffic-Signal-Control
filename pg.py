@@ -23,7 +23,7 @@ class PolicyGradient:
 
         self.sess = tf.Session()
         self.merged = tf.summary.merge_all()
-        self.writer = tf.summary.FileWriter("./logs", graph=tf.get_default_graph())
+        self.writer = tf.summary.FileWriter("./pg_log", graph=tf.get_default_graph())
         self.sess.run(tf.global_variables_initializer())
 
     def weight_variable(self, shape):
