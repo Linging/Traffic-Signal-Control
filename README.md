@@ -20,10 +20,10 @@ fron vis_env import *
 env = VisEnv()
 ...
 for epi in range(episodes):
-	env.reset()
-	env.test = True
-	for _ in range(steps):
-		next_state, reward, done = env.step(action)
+    env.reset()
+    env.test = True
+    for _ in range(steps):
+        next_state, reward, done = env.step(action)
 env.write_summary(epi, dir)
 ```
 #### Experiments
