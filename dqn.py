@@ -146,7 +146,7 @@ def action_transform(a):
 import os
 import random as rd
 
-EPISODE = 20
+EPISODE = 200
 STEP = 150
 def main(dir):
     agent = DQN()
@@ -188,6 +188,6 @@ def main(dir):
             env.write_summary(episode, dir)
 
 
-dir = "./dqn/gamma=0.995"
+dir = "./dqn"
 os.makedirs(dir)
 main(dir)
