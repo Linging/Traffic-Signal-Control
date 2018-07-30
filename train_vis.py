@@ -18,7 +18,7 @@ def action_transform(a):
     }
     return switch[a]
 
-EPISODE = 200
+EPISODE = 1000
 STEP = 150
 
 def main(dir):
@@ -30,27 +30,27 @@ def main(dir):
         env.reset()
         print("Episode:",episode,"Start")
 
-        if episode >= 14 and episode % 2 == 0: env.test = True
+        if episode >= 800 and episode % 10 == 0: env.test = True
         state = env.state
 
         sum_reward = []
-
         env.set_flow_mode()
+
         for i in range(STEP):
             # ==== ACTION DECISION ==== #
-            action = agent.egreedy_action(state)
+            action = agent.choose_action(state)
 
             actions = action_transform(action)
 
-            next_state, reward, down = env.step(actions)
+            next_state, reward, done = env.step(actions)
 
             sum_reward.append(reward)
 
-            if down:
+            if done:
                 break
 
             if not env.test:
-                agent.perceive(env.state, action, reward, next_state, down)
+                agent.store(env.state, action, reward, next_state, done)
 
             env.state = next_state
 
@@ -62,5 +62,9 @@ def main(dir):
 
 
 dir = "./dqn"
-os.makedirs(dir)
+try:
+    os.makedirs(dir)
+except:
+    print("Dir Exist!")
+
 main(dir)

@@ -1,21 +1,31 @@
 import tensorflow as tf
 import random
 import numpy as np
-from collections import deque
+from replay_memory import *
 
 class DQN():
-    def __init__(self):
-        self.replay_buffer = deque()
+    def __init__(self,
+                n_actions,
+                learning_rate=1e-4,
+                reward_decay=0.9,
+                e_greedy=0.9,
+                replace_target_iter=300,
+                memory_size=500,
+                batch_size=32,
+                e_greedy_increment=None,
+                output_graph=False,
+                dueling=False,
+                ):
         self.time_step = 0
-        self.epsilon = 0.9
+        self.epsilon = e_greedy
         self.final_epsilon = 0.01
 
-        self.action_dim = 16
+        self.action_dim = n_actions
         self.decay = 0.995
-        self.gamma = 0.9
-        self.replay_size = 2000
-        self.batch_size = 32
-        self.lr = 1e-4
+        self.gamma = reward_decay
+        self.memory_size = memory_size
+        self.batch_size = batch_size
+        self.lr = learning_rate
         self.logdir = "./dqn_log"
 
         self.dueling = False
@@ -28,6 +38,8 @@ class DQN():
         self.session.run(tf.global_variables_initializer())
         self.summary_op = tf.summary.merge_all()
         self.writer = tf.summary.FileWriter(self.logdir, self.session.graph)
+
+        self.experience_replay = ReplayMemoryFast(memory_size, batch_size)
 
     def create_Q_network(self):
         conv_W1 = self.weight_variable([3,3,2,32])
@@ -91,22 +103,34 @@ class DQN():
         self.action_input = tf.placeholder("float", [None, self.action_dim])
         self.y_input = tf.placeholder("float", [None])
         Q_action = tf.reduce_sum(tf.multiply(self.Q_value, self.action_input), reduction_indices = 1)
+
+        Q_mean = tf.reduce_mean(self.Q_value, axis=1)
+        tf.summary.scalar('Q_mean', Q_mean)
+
         self.cost = tf.reduce_mean(tf.square(self.y_input - Q_action))
         self.optimizer = tf.train.AdamOptimizer(self.lr).minimize(self.cost)
         tf.summary.scalar('cost',self.cost)
 
-    def train_Q_network(self):
+    def learn(self):
         self.time_step += 1
 
-        minibatch = random.sample(self.replay_buffer, self.batch_size)
-        state_batch = [data[0] for data in minibatch]
-        action_batch = [data[1] for data in minibatch]
-        reward_batch = [data[2] for data in minibatch]
-        next_state_batch = [data[3] for data in minibatch]
+        minibatch = self.experience_replay.sample()
 
+        if len(minibatch) == 0:
+            return
+
+        batch_s = np.asarray([data[0] for data in minibatch])
+        actions = np.asarray([data[1] for data in minibatch])
+        batch_r = np.asarray([data[2] for data in minibatch])
+        batch_s_ = np.asarray([data[3] for data in minibatch])
+
+        batch_a = np.zeros([self.batch_size, self.action_dim])
+        for i in range(self.batch_size):
+            batch_a[i, actions[i]] = 0
         y_batch = []
 
         Q_value_batch = self.Q_value.eval(feed_dict = {self.state_input:next_state_batch})
+
         for i in range(0,self.batch_size):
             done = minibatch[i][4]
             if done:
@@ -116,25 +140,22 @@ class DQN():
 
         feed_dict = {
             self.y_input:y_batch,
-            self.action_input:action_batch,
-            self.state_input:state_batch}
+            self.action_input:batch_a,
+            self.state_input:batch_s}
 
         self.optimizer.run(feed_dict=feed_dict)
         summary = self.session.run(self.summary_op, feed_dict=feed_dict)
         self.writer.add_summary(summary, self.time_step)
         self.writer.flush()
 
-    def perceive(self, state, action, reward, next_state, done):
-        one_hot_action = np.zeros(self.action_dim)
-        one_hot_action[action] = 1
+	def store(self, state, action, reward, next_state, is_terminal):
+		# rewards clipping
+		if self.reward_clipping > 0.0:
+			reward = np.clip(reward, -self.reward_clipping, self.reward_clipping)
 
-        self.replay_buffer.append((state, one_hot_action, reward, next_state, done))
-        if len(self.replay_buffer) > self.replay_size:
-            self.replay_buffer.popleft()
-        if len(self.replay_buffer) > self.batch_size:
-            self.train_Q_network()
+		self.experience_replay.store(state, action, reward, next_state, is_terminal)
 
-    def egreedy_action(self, state):
+    def choose_action(self, state):
         Q_value = self.Q_value.eval(feed_dict = {self.state_input:[state]})[0]
         if random.random() <= self.epsilon:
             action_index =  random.randint(0, self.action_dim - 1)

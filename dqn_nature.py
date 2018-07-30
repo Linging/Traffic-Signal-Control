@@ -119,11 +119,13 @@ class DeepQNetwork:
                                               bias_initializer=b_initializer, name='tar_q')
 
         with tf.variable_scope('q_target'):
-            q_target = self.r + self.gamma * tf.reduce_max(self.q_next, axis=1, name='Qmax_s_')    # shape=(None, )
+            q_target = self.r + self.gamma * tf.reduce_max(self.q_next, axis=1, name='Qmax_s_') # shape=(None, )
+            mean_Q_value = tf.reduce_mean(self.q_next, axis=1, name='Q_mean')
             self.q_target = tf.stop_gradient(q_target)
+        tf.summary.scalar('Q_mean', mean_Q_value)
         with tf.variable_scope('q_eval'):
-            a_indices = tf.stack([tf.range(tf.shape(self.a)[0], dtype=tf.int32), self.a], axis=1)
-            self.q_eval_wrt_a = tf.gather_nd(params=self.q_eval, indices=a_indices)    # shape=(None, )
+            a_indices = tf.stack([tf.range(tf.shape(self.a)[0], dtype=tf.int32), self.a], axis=1) # shape=(action_dim, 2)
+            self.q_eval_wrt_a = tf.gather_nd(params=self.q_eval, indices=a_indices)    # output Q(s,a)
         with tf.variable_scope('loss'):
             self.loss = tf.reduce_mean(tf.squared_difference(self.q_target, self.q_eval_wrt_a, name='TD_error'))
         tf.summary.scalar('loss', self.loss)
@@ -161,10 +163,10 @@ class DeepQNetwork:
 
 		batch_s = np.asarray( [d[0] for d in minibatch] )
 
-		batch_a = [d[1] for d in minibatch]
-		batch_actions = np.zeros( (self.batch_size, self.action_size) )
-		for i in xrange(self.batch_size):
-			batch_actions[i, actions[i]] = 1
+		actions = [d[1] for d in minibatch]
+		batch_a = np.zeros( (self.batch_size, self.action_size) )
+		for i in range(self.batch_size):
+			batch_a[i, actions[i]] = 1
 
 		batch_r = np.asarray( [d[2] for d in minibatch] )
 		batch_s_ = np.asarray( [d[3] for d in minibatch] )
