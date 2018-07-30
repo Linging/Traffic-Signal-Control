@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 
-# reproducible
+
 np.random.seed(1)
 tf.set_random_seed(1)
 
@@ -53,13 +53,13 @@ class PolicyGradient:
         max_pool2 = tf.nn.max_pool(conv_layer2, ksize=[1,1,2,1], strides=[1,1,2,1], padding='SAME')
 
         conv_layer3 =  tf.nn.relu(tf.nn.conv2d(max_pool2, conv_W3, strides=[1,1,1,1], padding='SAME') + conv_b3)
-
-        conv_layer3_flatten = tf.reshape(conv_layer3, [-1, 120 * 64])
+        max_pool3 = tf.nn.max_pool(conv_layer3, ksize=[1, 1, 2, 1], strides=[1, 1, 2, 1], padding='SAME')
+        conv_layer3_flatten = tf.reshape(max_pool3, [-1, 64 * 64])
 
         # fc1
         layer = tf.layers.dense(
             inputs=conv_layer3_flatten,
-            units=10,
+            units=128,
             activation=tf.nn.tanh,  # tanh activation
             kernel_initializer=tf.random_normal_initializer(mean=0, stddev=0.3),
             bias_initializer=tf.constant_initializer(0.1),

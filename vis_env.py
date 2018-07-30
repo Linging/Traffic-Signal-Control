@@ -2,7 +2,8 @@ import numpy as np
 from win32com.client import Dispatch
 import pandas as pd
 import time
-
+import random
+import os
 
 n_lanes = 8
 n_cells = 60
@@ -12,16 +13,18 @@ frames = 2
 class VisEnv():
     """docstring for VisEnv."""
     def __init__(self):
-        self.dir = "./dqn.inp"
+        self.dir = "D:\\Vissim\\Example\\dqn.inp"
 
         self.n_cross = 4
         self.n_lanes = 8
         self.n_queued = 0
 
-        self.reward_func= "dif_of_global_v"
+        # self.reward_func= "dif_of_global_v"
         # self.reward_func = "mixed_q_v"
+        self.reward_func = "absolute_mix_q_v"
+        # self.reward_func = "simple"
         self.mode = "fixed flow"
-        self.flow_rate = 450
+        self.flow_rate = 400
 
         self.error_summary = 0
         self.error_action = 0
@@ -33,6 +36,7 @@ class VisEnv():
     def reset(self):
         self.Vissim = Dispatch("Vissim.Vissim")
         self.Vissim.LoadNet(self.dir)
+        self.simulation = self.Vissim.Simulation
         self.Net = self.Vissim.Net
         self.links = self.Net.Links
         self.inputs = self.Net.VehicleInputs
@@ -47,13 +51,15 @@ class VisEnv():
         self.summary = [[],[],[]]
         self.state = np.zeros([n_lanes,n_cells,frames])
 
+        self.simulation.RandomSeed = random.randint(0,100)
+
     def reconstruct_signal_groups(self):
         return np.array(self.signal_groups).reshape(-1,2)
 
     def set_flow_rate(self, rate):
         for fr in self.inputs:
             fr.SetAttValue('VOLUME', rate)
-        print("Set Successfully, Rate=",rate)
+        print("Set Successfully, Rate =",rate)
 
     def set_flow_mode(self):
         if self.mode == "fixed flow":
@@ -75,7 +81,7 @@ class VisEnv():
             self.pre_action = actions
 
             self.action(all_red_actions)
-            for _ in range(6):
+            for _ in range(5):
                 self.Vissim.Simulation.RunSingleStep()
 
         if self.action(actions):
@@ -103,6 +109,9 @@ class VisEnv():
         except:
             self.error_action += 1
             return False
+
+    def action_sample(self):
+        return [random.randint(0,1) for i in range(self.n_cross)]
 
     def turn_cross_signal(self, group, action):
         if action == 1:
@@ -132,6 +141,16 @@ class VisEnv():
             reward = (self.current_v - self.pre_v) + (self.n_queued - self.pre_n_queued)
             self.pre_v = self.current_v
             return reward
+        elif self.reward_func == "absolute_mix_q_v":
+            ad_q = - self.n_queued
+            self.pre_v = self.current_v
+            reward = ad_q
+            if np.isnan(reward):reward = -30
+            return float(reward)
+        elif self.reward_func == 'simple':
+            self.pre_v = self.current_v
+            return self.pre_v
+
 
     def get_state(self):
         cell_length = 10
@@ -149,9 +168,12 @@ class VisEnv():
                         state[lane, i, 1] += (sp/10)
                         speed.append(sp)
                 except:
-                    print("ERROR---TOTALDISTANCE")
+                    pass
             lane += 1
-        speed = np.array(speed).mean()
+        if len(speed) == 0:
+            speed = 0
+        else:
+            speed = np.array(speed).mean()
         return state, speed
 
     def get_queued(self):

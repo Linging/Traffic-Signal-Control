@@ -4,14 +4,6 @@ import tensorflow as tf
 from vis_env import VisEnv
 import os
 
-env = VisEnv()
-
-RL = PolicyGradient(
-    n_actions=16,
-    learning_rate=0.01,
-    reward_decay=0.8,
-)
-
 def summarize(reward, i, summary_writer, tag):
   summary = tf.Summary()
   summary.value.add(tag=tag, simple_value=reward)
@@ -35,7 +27,15 @@ EPISODE = 1000
 STEPS = 150
 
 def train(dir):
+    env = VisEnv()
+
+    RL = PolicyGradient(
+        n_actions=16,
+        learning_rate=0.001,
+        reward_decay=0.9,
+    )
     for i_episode in range(EPISODE):
+
         env.reset()
 
         env.set_flow_mode()
@@ -63,6 +63,7 @@ def train(dir):
 
         if env.test:
             env.write_summary(i_episode, dir)
+
 
 dir = "./pg/reward_func_1"
 os.makedirs(dir)

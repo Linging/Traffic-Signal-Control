@@ -2,10 +2,6 @@ import tensorflow as tf
 import random
 import numpy as np
 from collections import deque
-import pandas as pd
-from win32com.client import Dispatch
-from vis_env import VisEnv
-
 
 class DQN():
     def __init__(self):
@@ -19,8 +15,10 @@ class DQN():
         self.gamma = 0.9
         self.replay_size = 2000
         self.batch_size = 32
-        self.lr = 0.0001
+        self.lr = 1e-4
         self.logdir = "./dqn_log"
+
+        self.dueling = False
 
         self.create_Q_network()
         self.create_training_method()
@@ -60,7 +58,28 @@ class DQN():
         conv_layer3_flatten = tf.reshape(conv_layer3, [-1, 120 * 64])
 
         fc1 = tf.nn.relu(tf.matmul(conv_layer3_flatten, fc_W1) + fc_b1)
-        self.Q_value = tf.matmul(fc1, fc_W2) + fc_b2
+
+        if self.dueling:
+            # Dueling DQN
+            with tf.variable_scope('Value'):
+                w1 = tf.get_variable('dueling_w2', [64, 1], initializer=w_initializer)
+                b1 = tf.get_variable('dueling_b2', [1, 1], initializer=b_initializer)
+                self.V = tf.matmul(fc1, w1) + b1
+
+            with tf.variable_scope('Advantage'):
+                w2 = tf.get_variable('dueling_w2', [64, self.action_dim], initializer=w_initializer)
+                b2 = tf.get_variable('dueling_b2', [1, self.action_dim], initializer=b_initializer)
+                self.A = tf.matmul(fc1, w2) + b2
+
+            with tf.variable_scope('Q'):
+                Q_value = self.V + (self.A - tf.reduce_mean(self.A, axis=1, keep_dims=True))     # Q = V(s) + A(s,a)
+        else:
+            with tf.variable_scope('Q'):
+                w2 = tf.get_variable('w2', [64, self.action_dim], initializer=w_initializer)
+                b2 = tf.get_variable('b2', [1, self.action_dim], initializer=b_initializer)
+                Q_value = tf.matmul(fc1, w2) + b2
+
+        return Q_value
 
     def weight_variable(self, shape):
         initializer = tf.contrib.layers.xavier_initializer()
@@ -128,66 +147,3 @@ class DQN():
     def action(self, state):
         Q_value = self.Q_value.eval(feed_dict = {self.state_input:[state]})[0]
         return np.argmax(Q_value)
-
-def action_transform(a):
-    switch = {
-        0: [0, 0, 0, 0], 1: [0, 0, 0, 1],
-        2: [0, 0, 1, 0], 3: [0, 1, 0, 0],
-        4: [1, 0, 0, 0], 5: [0, 0, 1, 1],
-        6: [0, 1, 0, 1], 7: [1, 0, 0, 1],
-        8: [0, 1, 1, 0], 9: [1, 0, 1, 0],
-        10: [1, 1, 0, 0], 11: [0, 1, 1, 1],
-        12: [1, 1, 1, 0], 13: [1, 0, 1, 1],
-        14: [1, 1, 0, 1], 15: [1, 1, 1, 1]
-    }
-    return switch[a]
-
-
-import os
-import random as rd
-
-EPISODE = 20
-STEP = 150
-def main(dir):
-    agent = DQN()
-
-    env = VisEnv()
-    for episode in range(0,EPISODE):
-        # ==== INITIALIZE ==== #
-        env.reset()
-        print("Episode:",episode,"Start")
-
-        if episode >= 14 and episode % 2 == 0: env.test = True
-        state = env.state
-
-        sum_reward = []
-
-        env.set_flow_mode()
-        for i in range(STEP):
-            # ==== ACTION DECISION ==== #
-            action = agent.egreedy_action(state)
-
-            actions = action_transform(action)
-
-            next_state, reward, down = env.step(actions)
-
-            sum_reward.append(reward)
-
-            if down:
-                break
-
-            if not env.test:
-                agent.perceive(env.state, action, reward, next_state, down)
-
-            env.state = next_state
-
-        ep_sum_reward = sum(sum_reward)
-        print("Episode:",episode," Reward:",ep_sum_reward," steps:", i)
-
-        if env.test:
-            env.write_summary(episode, dir)
-
-
-dir = "./dqn/gamma=0.995"
-os.makedirs(dir)
-main(dir)
