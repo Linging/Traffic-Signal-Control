@@ -1,5 +1,5 @@
-from dqn_nips import DQN
-from dqn_nature import DeepQNetwork
+from Agent.dqn_nips import DQN
+from Agent.dqn_nature import DeepQNetwork
 import os
 import random as rd
 from vis_env import VisEnv

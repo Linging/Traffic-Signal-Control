@@ -50,8 +50,10 @@ class VisEnv():
         self.pre_action = np.zeros(self.n_cross)
         self.summary = [[],[],[]]
         self.state = np.zeros([n_lanes,n_cells,frames])
+        self.random_seed()
 
-        self.simulation.RandomSeed = random.randint(0,100)
+    def random_seed(self):
+        self.simulation.RandomSeed = 7
 
     def reconstruct_signal_groups(self):
         return np.array(self.signal_groups).reshape(-1,2)

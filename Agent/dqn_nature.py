@@ -1,6 +1,6 @@
 import numpy as np
 import tensorflow as tf
-from replay_memory import *
+from Agent.replay_memory import *
 
 np.random.seed(1)
 tf.set_random_seed(1)

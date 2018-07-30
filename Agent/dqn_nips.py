@@ -1,7 +1,7 @@
 import tensorflow as tf
 import random
 import numpy as np
-from replay_memory import *
+from Agent.replay_memory import *
 
 class DQN():
     def __init__(self,

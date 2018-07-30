@@ -1,22 +1,14 @@
-"""
-Giacomo Spigler
-"""
 import numpy as np
 import random
 from collections import deque
 
 
 class ReplayMemoryFast:
-	""" Simple queue for storing and sampling of minibatches.
-		This implementation has been optimized for speed by pre-allocating the buffer memory and
-		by allowing the same element to be non-unique in the sampled minibatch. In practice, however, this
-		will never happen (minibatch size ~32-128 out of 10-100-1000k memory size).
-	"""
 	def __init__(self, memory_size, minibatch_size):
-		self.memory_size = memory_size # max number of samples to store
+		self.memory_size = memory_size
 		self.minibatch_size = minibatch_size
 
-		self.experience = [None]*self.memory_size  #deque(maxlen = self.memory_size)
+		self.experience = [None]*self.memory_size
 		self.current_index = 0
 		self.size = 0
 
