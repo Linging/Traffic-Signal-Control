@@ -5,18 +5,14 @@ import random as rd
 from vis_env import VisEnv
 
 
-def action_transform(a):
-    switch = {
-        0: [0, 0, 0, 0], 1: [0, 0, 0, 1],
-        2: [0, 0, 1, 0], 3: [0, 1, 0, 0],
-        4: [1, 0, 0, 0], 5: [0, 0, 1, 1],
-        6: [0, 1, 0, 1], 7: [1, 0, 0, 1],
-        8: [0, 1, 1, 0], 9: [1, 0, 1, 0],
-        10: [1, 1, 0, 0], 11: [0, 1, 1, 1],
-        12: [1, 1, 1, 0], 13: [1, 0, 1, 1],
-        14: [1, 1, 0, 1], 15: [1, 1, 1, 1]
-    }
-    return switch[a]
+def action_transform(a, action_dim):
+    str = bin(a)[2:]
+    for i in range(action_dim - len(str)):
+        str = '0' + str
+    str = list(str)
+    for j in range(action_dim):
+        str[j] = int(str[j])
+    return str
 
 EPISODE = 1000
 STEP = 150
@@ -40,7 +36,7 @@ def main(dir):
             # ==== ACTION DECISION ==== #
             action = agent.choose_action(state)
 
-            actions = action_transform(action)
+            actions = action_transform(action, 4)
 
             next_state, reward, done = env.step(actions)
 
