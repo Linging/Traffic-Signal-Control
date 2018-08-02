@@ -18,6 +18,10 @@ def action_transform(a, action_dim):
     for j in range(action_dim):
         str[j] = int(str[j])
     return str
+  
+def discrate_action(a, action_dim):
+  cell = 2 / action_dim
+  return (a + 1)//cell
 
 EPISODE = 1000
 STEPS = 150
