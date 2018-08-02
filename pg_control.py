@@ -10,18 +10,14 @@ def summarize(reward, i, summary_writer, tag):
   summary_writer.add_summary(summary, i)
   summary_writer.flush()
 
-def action_transform(a):
-    switch = {
-        0: [0, 0, 0, 0], 1: [0, 0, 0, 1],
-        2: [0, 0, 1, 0], 3: [0, 1, 0, 0],
-        4: [1, 0, 0, 0], 5: [0, 0, 1, 1],
-        6: [0, 1, 0, 1], 7: [1, 0, 0, 1],
-        8: [0, 1, 1, 0], 9: [1, 0, 1, 0],
-        10: [1, 1, 0, 0], 11: [0, 1, 1, 1],
-        12: [1, 1, 1, 0], 13: [1, 0, 1, 1],
-        14: [1, 1, 0, 1], 15: [1, 1, 1, 1]
-    }
-    return switch[a]
+def action_transform(a, action_dim):
+    str = bin(a)[2:]
+    for i in range(action_dim - len(str)):
+        str = '0' + str
+    str = list(str)
+    for j in range(action_dim):
+        str[j] = int(str[j])
+    return str
 
 EPISODE = 1000
 STEPS = 150
@@ -46,7 +42,7 @@ def train(dir):
 
             observation = env.state
             action = RL.choose_action(observation)
-            actions = action_transform(action)
+            actions = action_transform(action, RL.n_actions)
 
             observation_, reward, done = env.step(actions)
 
