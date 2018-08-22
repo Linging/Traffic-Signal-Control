@@ -24,7 +24,7 @@ for epi in range(episodes):
     env.test = True
     for _ in range(steps):
         next_state, reward, done = env.step(action)
-env.write_summary(epi, dir)
+    env.write_summary(epi, dir)
 ```
 #### Experiments
 The performance of DQN is not so good among the series of reinforcement learning algorithm, but agent are still capble to act appropriately in our traffic enviroment.
@@ -33,7 +33,7 @@ The performance of DQN is not so good among the series of reinforcement learning
 ![Travel Time](https://github.com/Linging/Traffic-Signal-Control/blob/master/images/T_Mix%20Q.png)
 
 #### TODO
-More reinforment learning models like dueling-DQN, DDPG, to further Improve the performance of net, and to solve the large discrete actions space problem.
+More reinforment learning models like dueling-DQN, DDPG, to further improve the performance of agent, and to solve the large discrete actions space problem.
 Intelligent Traffic Signal Control
 
 

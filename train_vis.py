@@ -14,7 +14,8 @@ def action_transform(a, action_dim):
         str[j] = int(str[j])
     return str
 
-EPISODE = 100
+
+EPISODE = 1000
 STEP = 150
 
 def main(dir):
