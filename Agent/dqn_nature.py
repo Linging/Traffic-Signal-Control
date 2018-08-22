@@ -61,6 +61,7 @@ class DeepQNetwork:
 
     def _build_net(self):
         # ------------------ all inputs ------------------------
+        tf.reset_default_graph()
         self.s = tf.placeholder(tf.float32, [None, self.n_features], name='s')  # input State
         self.s_ = tf.placeholder(tf.float32, [None, self.n_features], name='s_')  # input Next State
         self.r = tf.placeholder(tf.float32, [None, ], name='r')  # input Reward
@@ -132,12 +133,12 @@ class DeepQNetwork:
         with tf.variable_scope('train'):
             self._train_op = tf.train.RMSPropOptimizer(self.lr).minimize(self.loss)
 
-	def store(self, state, action, reward, next_state, is_terminal):
-		# rewards clipping
-		if self.reward_clipping > 0.0:
-			reward = np.clip(reward, -self.reward_clipping, self.reward_clipping)
+    def store(self, state, action, reward, next_state, is_terminal):
+        # rewards clipping
+        if self.reward_clipping > 0.0:
+            reward = np.clip(reward, -self.reward_clipping, self.reward_clipping)
 
-		self.experience_replay.store(state, action, reward, next_state, is_terminal)
+        self.experience_replay.store(state, action, reward, next_state, is_terminal)
 
     def choose_action(self, observation):
         # to have batch dimension when feed into tf placeholder
@@ -159,19 +160,19 @@ class DeepQNetwork:
 
         mini_batch = self.experience_replay.sample()
         if len(mini_batch) == 0:
-            return
+            return 0
 
-		batch_s = np.asarray( [d[0] for d in minibatch] )
+        batch_s = np.asarray([d[0] for d in mini_batch])
 
-		actions = [d[1] for d in minibatch]
-		batch_a = np.zeros( (self.batch_size, self.action_size) )
-		for i in range(self.batch_size):
-			batch_a[i, actions[i]] = 1
+        actions = [d[1] for d in mini_batch]
+        batch_a = np.zeros( (self.batch_size, self.n_actions) )
+        for i in range(self.batch_size):
+            batch_a[i, actions[i]] = 1
 
-		batch_r = np.asarray( [d[2] for d in minibatch] )
-		batch_s_ = np.asarray( [d[3] for d in minibatch] )
+        batch_r = np.asarray( [d[2] for d in mini_batch] )
+        batch_s_ = np.asarray( [d[3] for d in mini_batch])
 
-		# batch_newstates_mask = np.asarray( [not d[4] for d in minibatch] )
+        # states_mask = np.asarray( [not d[4] for d in minibatch] )
 
         _, cost = self.sess.run(
             [self._train_op, self.loss],

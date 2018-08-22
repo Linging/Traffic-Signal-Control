@@ -21,8 +21,8 @@ class VisEnv():
 
         # self.reward_func= "dif_of_global_v"
         # self.reward_func = "mixed_q_v"
-        self.reward_func = "absolute_mix_q_v"
-        # self.reward_func = "simple"
+        # self.reward_func = "absolute_mix_q_v"
+        self.reward_func = "simple"
         self.mode = "fixed flow"
         self.flow_rate = 400
 
@@ -151,7 +151,7 @@ class VisEnv():
             return float(reward)
         elif self.reward_func == 'simple':
             self.pre_v = self.current_v
-            return self.pre_v
+            return self.pre_v / 50
 
 
     def get_state(self):
