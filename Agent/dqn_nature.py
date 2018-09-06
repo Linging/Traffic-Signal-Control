@@ -1,6 +1,7 @@
 import numpy as np
 import tensorflow as tf
 from Agent.replay_memory import *
+from Agent.tf_utils import *
 
 np.random.seed(1)
 tf.set_random_seed(1)
@@ -13,7 +14,7 @@ class DeepQNetwork:
             n_actions,
             n_features,
             learning_rate=0.01,
-            reward_decay=0.9,
+            reward_decay=0.8,
             e_greedy_max=0.99,
             replace_target_iter=300,
             memory_size=500,
@@ -70,57 +71,41 @@ class DeepQNetwork:
         self.r = tf.placeholder(tf.float32, [None, ], name='r')  # input Reward
         self.a = tf.placeholder(tf.int32, [None, ], name='a')  # input Action
 
-        w_initializer, b_initializer = tf.random_normal_initializer(0., 0.3), tf.constant_initializer(0.01)
+
 
         # ------------------ build evaluate_net ------------------
         with tf.variable_scope('eval_net'):
-            conv_layer1 = tf.layers.conv2d(self.s, 32, kernel_size = [5, 5], padding='SAME',
-                                           activation= tf.nn.relu, kernel_initializer=w_initializer,
-                                           bias_initializer=b_initializer, name='conv1')
-            max_pool1 = tf.nn.max_pool(conv_layer1, ksize=[1,1,2,1], strides=[1,1,2,1], padding='SAME')
+            conv_layer1 = conv2d(self.s, 16, kernel_size = [5, 5])
+            max_pool1 = max_pool(conv_layer1, kernel_size = [5, 5])
 
-            conv_layer2 = tf.layers.conv2d(max_pool1, 64, kernel_size = [3, 3], padding='SAME',
-                                           activation= tf.nn.relu, kernel_initializer=w_initializer,
-                                           bias_initializer=b_initializer, name='conv2')
-            max_pool2 = tf.nn.max_pool(conv_layer2, ksize=[1,1,2,1], strides=[1,1,2,1], padding='SAME')
+            conv_layer2 = conv2d(max_pool1, 32, kernel_size = [3, 3],)
+            max_pool2 = max_pool(conv_layer2, kernel_size=[1,2,2,1])
 
-            conv_layer3 =  tf.layers.conv2d(max_pool2, 64, kernel_size = [3, 3], padding='SAME',
-                                           activation= tf.nn.relu, kernel_initializer=w_initializer,
-                                           bias_initializer=b_initializer, name='conv3')
-            max_pool3 = tf.nn.max_pool(conv_layer3, ksize=[1,1,2,1], strides=[1,1,2,1], padding='SAME')
+            conv_layer3 =  tf.layers.conv2d(max_pool2, 32, kernel_size = [3, 3])
+            max_pool3 = max_pool(conv_layer3, kernel_size=[1,2,2,1])
 
-            conv_layer3_flatten = tf.reshape(max_pool3, [-1, 64 * 64])
+            conv_layer3_flatten = tf.reshape(max_pool3, [-1, 30 * 32])
 
             if not self.dueling:
-                fc = tf.layers.dense(conv_layer3_flatten, 64, tf.nn.relu, kernel_initializer=w_initializer,
-                                     bias_initializer=b_initializer, name='eval_fc')
-                self.q_eval = tf.layers.dense(fc, self.n_actions, kernel_initializer=w_initializer,
-                                              bias_initializer=b_initializer, name='eval_q')
+                hidden = fc(conv_layer3_flatten, 256, activation_fn=tf.nn.relu)
+                self.q_eval = fc(hidden, self.n_actions)
 
         # ------------------ build target_net ------------------
         with tf.variable_scope('target_net'):
-            conv_layer1 = tf.layers.conv2d(self.s_, 32, kernel_size=[5, 5], padding='SAME',
-                                           activation=tf.nn.relu, kernel_initializer=w_initializer,
-                                           bias_initializer=b_initializer, name='tar_conv1')
-            max_pool1 = tf.nn.max_pool(conv_layer1, ksize=[1, 1, 2, 1], strides=[1, 1, 2, 1], padding='SAME')
+            tar_conv_layer1 = conv2d(self.s, 16, kernel_size = [5, 5])
+            tar_max_pool1 = max_pool(tar_conv_layer1, kernel_size = [5, 5])
 
-            conv_layer2 = tf.layers.conv2d(max_pool1, 64, kernel_size=[3, 3], padding='SAME',
-                                           activation=tf.nn.relu, kernel_initializer=w_initializer,
-                                           bias_initializer=b_initializer, name='tar_conv2')
-            max_pool2 = tf.nn.max_pool(conv_layer2, ksize=[1, 1, 2, 1], strides=[1, 1, 2, 1], padding='SAME')
+            tar_conv_layer2 = conv2d(tar_max_pool1, 32, kernel_size = [3, 3],)
+            tar_max_pool2 = max_pool(tar_conv_layer2, kernel_size=[1,2,2,1])
 
-            conv_layer3 = tf.layers.conv2d(max_pool2, 64, kernel_size=[3, 3], padding='SAME',
-                                           activation=tf.nn.relu, kernel_initializer=w_initializer,
-                                           bias_initializer=b_initializer, name='tar_conv3')
-            max_pool3 = tf.nn.max_pool(conv_layer3, ksize=[1, 1, 2, 1], strides=[1, 1, 2, 1], padding='SAME')
+            tar_conv_layer3 =  tf.layers.conv2d(tar_max_pool2, 32, kernel_size = [3, 3])
+            tar_max_pool3 = max_pool(tar_conv_layer3, kernel_size=[1,2,2,1])
 
-            conv_layer3_flatten = tf.reshape(max_pool3, [-1, 64 * 64])
+            tar_conv_layer3_flatten = tf.reshape(tar_max_pool3, [-1, 30 * 32])
 
             if not self.dueling:
-                t1 = tf.layers.dense(conv_layer3_flatten, 64, tf.nn.relu, kernel_initializer=w_initializer,
-                                     bias_initializer=b_initializer, name='tar_fc')
-                self.q_next = tf.layers.dense(t1, self.n_actions, kernel_initializer=w_initializer,
-                                              bias_initializer=b_initializer, name='tar_q')
+                tar_hidden = fc(tar_conv_layer3_flatten, 256, activation_fn=tf.nn.relu)
+                self.q_next = fc(tar_hidden, self.n_actions)
 
         with tf.variable_scope('q_target'):
             q_target = self.r + self.gamma * tf.reduce_max(self.q_next, axis=1, name='Qmax_s_') # shape=(None, )

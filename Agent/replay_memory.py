@@ -12,8 +12,8 @@ class ReplayMemoryFast:
 		self.current_index = 0
 		self.size = 0
 
-	def store(self, observation, action, reward, newobservation, is_terminal):
-		self.experience[self.current_index] = (observation, action, reward, newobservation, is_terminal)
+	def store(self, observation, action, reward, newobservation, is_terminal, info):
+		self.experience[self.current_index] = (observation, action, reward, newobservation, is_terminal, info)
 		self.current_index += 1
 		self.size = min(self.size+1, self.memory_size)
 		if self.current_index >= self.memory_size:

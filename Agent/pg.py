@@ -37,31 +37,31 @@ class PolicyGradient:
             self.tf_acts = tf.placeholder(tf.int32, [None, ], name="actions_num")
             self.tf_vt = tf.placeholder(tf.float32, [None, ], name="actions_value")
 
-        conv_W1 = self.weight_variable([3,3,2,32])
+        conv_W1 = self.weight_variable([5,5,2,16])
         conv_b1 = tf.random_normal([32])
 
-        conv_W2 = self.weight_variable([3,3,32,64])
+        conv_W2 = self.weight_variable([3,3,32,32])
         conv_b2 = tf.random_normal([64])
 
-        conv_W3 = self.weight_variable([3,3,64,64])
+        conv_W3 = self.weight_variable([3,3,64,32])
         conv_b3 = tf.random_normal([64])
 
         conv_layer1 = tf.nn.relu(tf.nn.conv2d(self.tf_obs, conv_W1, strides=[1,1,1,1], padding='SAME') + conv_b1)
-        max_pool1 = tf.nn.max_pool(conv_layer1, ksize=[1,1,2,1], strides=[1,1,2,1], padding='SAME')
+        max_pool1 = tf.nn.max_pool(conv_layer1, ksize=[1,2,2,1], strides=[1,1,2,1], padding='SAME')
 
         conv_layer2 = tf.nn.relu(tf.nn.conv2d(max_pool1, conv_W2, strides=[1,1,1,1], padding='SAME') + conv_b2)
-        max_pool2 = tf.nn.max_pool(conv_layer2, ksize=[1,1,2,1], strides=[1,1,2,1], padding='SAME')
+        max_pool2 = tf.nn.max_pool(conv_layer2, ksize=[1,2,2,1], strides=[1,1,2,1], padding='SAME')
 
         conv_layer3 =  tf.nn.relu(tf.nn.conv2d(max_pool2, conv_W3, strides=[1,1,1,1], padding='SAME') + conv_b3)
-        max_pool3 = tf.nn.max_pool(conv_layer3, ksize=[1, 1, 2, 1], strides=[1, 1, 2, 1], padding='SAME')
-        conv_layer3_flatten = tf.reshape(max_pool3, [-1, 64 * 64])
+
+        conv_layer3_flatten = tf.reshape(conv_layer3, [-1, 60 * 32])
 
         # fc1
         layer = tf.layers.dense(
             inputs=conv_layer3_flatten,
             units=128,
             activation=tf.nn.tanh,  # tanh activation
-            kernel_initializer=tf.random_normal_initializer(mean=0, stddev=0.3),
+            kernel_initializer=tf.random_normal_initializer(mean=0, stddev=1),
             bias_initializer=tf.constant_initializer(0.1),
             name='fc1'
         )
@@ -70,7 +70,7 @@ class PolicyGradient:
             inputs=layer,
             units=self.n_actions,
             activation=None,
-            kernel_initializer=tf.random_normal_initializer(mean=0, stddev=0.3),
+            kernel_initializer=tf.random_normal_initializer(mean=0, stddev=1),
             bias_initializer=tf.constant_initializer(0.1),
             name='fc2'
         )

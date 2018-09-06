@@ -1,5 +1,4 @@
 from Agent.pg import PolicyGradient
-import numpy as np
 import tensorflow as tf
 from vis_env import VisEnv
 import os

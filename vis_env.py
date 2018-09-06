@@ -88,10 +88,11 @@ class VisEnv():
             for _ in range(steps):
                 self.Vissim.Simulation.RunSingleStep()
 
-            self.next_state, self.current_v = self.get_state()
+            self.next_state, self.current_v , valid = self.get_state()
 
             # unstable Vissim will give nan data sometimes.
-            while np.isnan(self.current_v):
+            if not valid:
+                print("\nWarning: unexpected break!!!\n")
                 self.current_v = -1
 
         else:
@@ -133,7 +134,7 @@ class VisEnv():
             group[0].SetAttValue('type', 3)
 
     def down(self):
-        if self.pre_n_queued >= 50 or self.current_v == -1:
+        if self.current_v <= 10:
             return True
         else:
             return False
@@ -163,24 +164,40 @@ class VisEnv():
         state = np.zeros([n_lanes,n_cells,frames])
         lane = 0
         speed = []
+        error = 0
+        valid = True
         for link in self.links:
             vehicles = link.GetVehicles()
+
             for v in vehicles:
+                # vissim is shit.
                 try:
-                    i = int(v.AttValue("TOTALDISTANCE")/cell_length)
-                    if i < n_cells:
-                        state[lane, i, 0] += 1
-                        sp = v.AttValue("SPEED")
-                        state[lane, i, 1] += (sp/10)
-                        speed.append(sp)
+                    poi, s = v.AttValue("TOTALDISTANCE"), v.AttValue("SPEED")
                 except:
-                    pass
+                    error += 1
+                    break
+                if np.isnan(poi) or np.isnan(s):
+                    break
+                else:
+                    i = int(poi/cell_length)
+                    if i < n_cells and i >= 0:
+                        state[lane, i, 0] += 1
+                        state[lane, i, 1] += (s/10)
+                        speed.append(s)
+
             lane += 1
+
         if len(speed) == 0:
             speed = 0
         else:
             speed = np.array(speed).mean()
-        return state, speed
+            # avoid strange big value.
+            if speed > 60 or speed < 0:
+                speed = 0
+                error += 5
+        if error >= 5:
+            valid = False
+        return state, speed, valid
 
     def get_queued(self):
         queued_vehicles = self.vehicles.GetQueued()

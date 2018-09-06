@@ -22,8 +22,8 @@ def summarize(reward, i, summary_writer, tag):
   summary_writer.flush()
 
 
-EPISODE = 200
-STEP = 150
+EPISODE = 10000
+STEP = 300
 
 def main(Agent, csv_summary):
     # agent = DeepQNetwork(n_actions=16,n_features=[8,60,2])
@@ -32,17 +32,20 @@ def main(Agent, csv_summary):
     for episode in range(0,EPISODE):
         # ==== INITIALIZE ==== #
         env.reset()
+        env.random_seed(7)
         print("Episode:",episode,"Start")
 
-        if episode >= 100 and episode % 10 == 0: env.test = True
+        if episode >= 900 and episode % 10 == 0: env.test = True
         state = env.state
 
         sum_reward = []
         env.set_flow_mode()
+        pre_actions = [0,0,0,0]
+        print("epsilon of agent is:", agent.epsilon)
 
         for i in range(STEP):
             # ==== ACTION DECISION ==== #
-            action = agent.choose_action(state)
+            action = agent.choose_action(state, pre_actions)
 
             actions = action_transform(action, 4)
 
@@ -53,10 +56,13 @@ def main(Agent, csv_summary):
             if done:
                 break
 
+            info = pre_actions + actions
+
             if not env.test:
-                agent.store(env.state, action, reward, next_state, done)
+                agent.store(env.state, action, reward, next_state, done, info)
 
             env.state = next_state
+            pre_actions = actions
 
         ep_sum_reward = sum(sum_reward)
         print("Episode:",episode," Reward:",ep_sum_reward," steps:", i)
@@ -66,8 +72,8 @@ def main(Agent, csv_summary):
         if env.test:
             env.write_summary(episode, csv_summary)
 
-for learn_rate in [1e-5, 1e-4, 1e-3, 1e-2]:
-    for replay_size in [3000, 5000]:
+for learn_rate in [1e-4,1e-3]:
+    for replay_size in [10000, 3000]:
         for batch_size in [16, 32]:
             dir = "lr=" + str(learn_rate) + " rep=" \
                   + str(replay_size) + " bat=" + str(batch_size)
