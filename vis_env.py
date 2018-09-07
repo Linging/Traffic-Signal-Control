@@ -134,7 +134,7 @@ class VisEnv():
             group[0].SetAttValue('type', 3)
 
     def down(self):
-        if self.current_v <= 10:
+        if self.pre_n_queued >= 100:
             return True
         else:
             return False

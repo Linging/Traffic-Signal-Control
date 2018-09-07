@@ -26,7 +26,7 @@ EPISODE = 10000
 STEP = 300
 
 def main(Agent, csv_summary):
-    # agent = DeepQNetwork(n_actions=16,n_features=[8,60,2])
+
     agent = Agent
     env = VisEnv()
     for episode in range(0,EPISODE):
@@ -40,13 +40,11 @@ def main(Agent, csv_summary):
 
         sum_reward = []
         env.set_flow_mode()
-        pre_actions = [0,0,0,0]
-        print("epsilon of agent is:", agent.epsilon)
 
         for i in range(STEP):
             # ==== ACTION DECISION ==== #
-            action = agent.choose_action(state, pre_actions)
-
+            # action = agent.choose_action(state, pre_actions)
+            action = agent.choose_action(state)
             actions = action_transform(action, 4)
 
             next_state, reward, done = env.step(actions)
@@ -56,25 +54,25 @@ def main(Agent, csv_summary):
             if done:
                 break
 
-            info = pre_actions + actions
+            info = actions
 
             if not env.test:
                 agent.store(env.state, action, reward, next_state, done, info)
 
             env.state = next_state
-            pre_actions = actions
+
 
         ep_sum_reward = sum(sum_reward)
-        print("Episode:",episode," Reward:",ep_sum_reward," steps:", i)
+        print("Episode:",episode," Reward:",ep_sum_reward," steps:", i, " Epsilon:", agent.epsilon)
 
         summarize(ep_sum_reward, episode, agent.writer, 'Rewards')
 
         if env.test:
             env.write_summary(episode, csv_summary)
 
-for learn_rate in [1e-4,1e-3]:
-    for replay_size in [10000, 3000]:
-        for batch_size in [16, 32]:
+for learn_rate in [1e-4]:
+    for replay_size in [100000]:
+        for batch_size in [16]:
             dir = "lr=" + str(learn_rate) + " rep=" \
                   + str(replay_size) + " bat=" + str(batch_size)
             csv_summary = "./dqn/" + dir
@@ -84,8 +82,8 @@ for learn_rate in [1e-4,1e-3]:
             except:
                 print("Dir Exist!")
 
-            Agent = DQN(16,learning_rate=learn_rate,memory_size=replay_size,
-                        batch_size=batch_size, tensorboard_logs=tensorboard_logs)
-
+            # Agent = DQN(16,learning_rate=learn_rate,memory_size=replay_size,
+            #             batch_size=batch_size, tensorboard_logs=tensorboard_logs)
+            Agent = DeepQNetwork(n_actions=16, n_features=[8, 60, 2])
 
             main(Agent, csv_summary)

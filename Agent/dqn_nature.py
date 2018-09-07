@@ -17,8 +17,8 @@ class DeepQNetwork:
             reward_decay=0.8,
             e_greedy_max=0.99,
             replace_target_iter=300,
-            memory_size=500,
-            batch_size=32,
+            memory_size=10000,
+            batch_size=16,
             e_greedy_increment=0.0001,
             output_graph=True,
             dueling=False,
@@ -37,7 +37,7 @@ class DeepQNetwork:
         # total learning step
         self.learn_step_counter = 0
 
-        self.reward_clipping = 1
+        self.reward_clipping = 10
 
         # initialize replay memory
         self.experience_replay = ReplayMemoryFast(memory_size, batch_size)
@@ -76,15 +76,14 @@ class DeepQNetwork:
         # ------------------ build evaluate_net ------------------
         with tf.variable_scope('eval_net'):
             conv_layer1 = conv2d(self.s, 16, kernel_size = [5, 5])
-            max_pool1 = max_pool(conv_layer1, kernel_size = [5, 5])
+            max_pool1 = max_pool(conv_layer1, kernel_size = [2,2])
 
             conv_layer2 = conv2d(max_pool1, 32, kernel_size = [3, 3],)
-            max_pool2 = max_pool(conv_layer2, kernel_size=[1,2,2,1])
+            max_pool2 = max_pool(conv_layer2, kernel_size=[2,2])
 
-            conv_layer3 =  tf.layers.conv2d(max_pool2, 32, kernel_size = [3, 3])
-            max_pool3 = max_pool(conv_layer3, kernel_size=[1,2,2,1])
+            conv_layer3 =  conv2d(max_pool2, 32, kernel_size = [3, 3])
 
-            conv_layer3_flatten = tf.reshape(max_pool3, [-1, 30 * 32])
+            conv_layer3_flatten = tf.reshape(conv_layer3, [-1, 30 * 32])
 
             if not self.dueling:
                 hidden = fc(conv_layer3_flatten, 256, activation_fn=tf.nn.relu)
@@ -93,15 +92,14 @@ class DeepQNetwork:
         # ------------------ build target_net ------------------
         with tf.variable_scope('target_net'):
             tar_conv_layer1 = conv2d(self.s, 16, kernel_size = [5, 5])
-            tar_max_pool1 = max_pool(tar_conv_layer1, kernel_size = [5, 5])
+            tar_max_pool1 = max_pool(tar_conv_layer1, kernel_size = [2,2])
 
             tar_conv_layer2 = conv2d(tar_max_pool1, 32, kernel_size = [3, 3],)
-            tar_max_pool2 = max_pool(tar_conv_layer2, kernel_size=[1,2,2,1])
+            tar_max_pool2 = max_pool(tar_conv_layer2, kernel_size=[2,2])
 
-            tar_conv_layer3 =  tf.layers.conv2d(tar_max_pool2, 32, kernel_size = [3, 3])
-            tar_max_pool3 = max_pool(tar_conv_layer3, kernel_size=[1,2,2,1])
+            tar_conv_layer3 =  conv2d(tar_max_pool2, 32, kernel_size = [3, 3])
 
-            tar_conv_layer3_flatten = tf.reshape(tar_max_pool3, [-1, 30 * 32])
+            tar_conv_layer3_flatten = tf.reshape(tar_conv_layer3, [-1, 30 * 32])
 
             if not self.dueling:
                 tar_hidden = fc(tar_conv_layer3_flatten, 256, activation_fn=tf.nn.relu)
@@ -120,12 +118,15 @@ class DeepQNetwork:
         with tf.variable_scope('train'):
             self._train_op = tf.train.RMSPropOptimizer(self.lr).minimize(self.loss)
 
-    def store(self, state, action, reward, next_state, is_terminal):
+    def store(self, state, action, reward, next_state, is_terminal, info):
         # rewards clipping
         if self.reward_clipping > 0.0:
             reward = np.clip(reward, -self.reward_clipping, self.reward_clipping)
 
-        self.experience_replay.store(state, action, reward, next_state, is_terminal)
+        self.experience_replay.store(state, action, reward, next_state, is_terminal, info)
+
+        if self.experience_replay.current_index >= 160:
+            self.learn()
 
     def choose_action(self, observation):
         # to have batch dimension when feed into tf placeholder
@@ -150,12 +151,7 @@ class DeepQNetwork:
             return 0
 
         batch_s = np.asarray([d[0] for d in mini_batch])
-
-        actions = [d[1] for d in mini_batch]
-        batch_a = np.zeros( (self.batch_size, self.n_actions) )
-        for i in range(self.batch_size):
-            batch_a[i, actions[i]] = 1
-
+        batch_a = np.asarray( [d[1] for d in mini_batch] )
         batch_r = np.asarray( [d[2] for d in mini_batch] )
         batch_s_ = np.asarray( [d[3] for d in mini_batch])
 
