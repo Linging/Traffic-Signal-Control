@@ -22,8 +22,8 @@ def discrate_action(a, action_dim):
   cell = 2 / action_dim
   return (a + 1)//cell
 
-EPISODE = 1000
-STEPS = 150
+EPISODE = 10000
+STEPS = 200
 
 def train(dir):
     env = VisEnv()
@@ -38,21 +38,23 @@ def train(dir):
         env.reset()
 
         env.set_flow_mode()
-
-        if i_episode % 5 == 0: env.test = True
+        if i_episode > 9000: env.test = True
+        observation = env.init_state
 
         for i in range(STEPS):
 
-            observation = env.state
             action = RL.choose_action(observation)
-            actions = action_transform(action, RL.n_actions)
+            if env.test:
+                action = RL.choose_action_test(observation)
+            actions = action_transform(action, 4)
 
             observation_, reward, done = env.step(actions)
 
+            if done or i == STEPS - 1: reward = i
             RL.store_transition(observation, action, reward)
             if done:
                 break
-            env.state = observation_
+            observation = observation_
 
 
         ep_rs_sum = sum(RL.ep_rs)
@@ -60,10 +62,10 @@ def train(dir):
         summarize(ep_rs_sum,i_episode,RL.writer,'train')
         vt = RL.learn(i_episode)
 
-        if env.test:
-            env.write_summary(i_episode, dir)
+        # if env.test:
+            # env.write_summary(i_episode, dir)
 
 
-dir = "./pg/reward_func_1"
-os.makedirs(dir)
+# dir = "./pg/"
+# os.makedirs(dir)
 train(dir)

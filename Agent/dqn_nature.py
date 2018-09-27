@@ -2,6 +2,7 @@ import numpy as np
 import tensorflow as tf
 from Agent.replay_memory import *
 from Agent.tf_utils import *
+from Agent.networks import *
 
 np.random.seed(1)
 tf.set_random_seed(1)
@@ -12,7 +13,6 @@ class DeepQNetwork:
     def __init__(
             self,
             n_actions,
-            n_features,
             learning_rate=0.01,
             reward_decay=0.8,
             e_greedy_max=0.99,
@@ -22,9 +22,10 @@ class DeepQNetwork:
             e_greedy_increment=0.0001,
             output_graph=True,
             dueling=False,
+            state_size = [84,84],
     ):
         self.n_actions = n_actions
-        self.n_features = n_features
+        self.state_size = state_size
         self.lr = learning_rate
         self.gamma = reward_decay
         self.memory_size = memory_size
@@ -36,7 +37,8 @@ class DeepQNetwork:
         self.dueling = dueling
         # total learning step
         self.learn_step_counter = 0
-
+        self.network = QNetworkNature(state_size, n_actions, 'eval_net')
+        self.target_network = QNetworkNature(state_size, n_actions, 'target_net')
         self.reward_clipping = 10
 
         # initialize replay memory
@@ -65,45 +67,17 @@ class DeepQNetwork:
 
     def _build_net(self):
         # ------------------ all inputs ------------------------
-        tf.reset_default_graph()
-        self.s = tf.placeholder(tf.float32, [None] + self.n_features, name='s')  # input State
-        self.s_ = tf.placeholder(tf.float32, [None] + self.n_features, name='s_')  # input Next State
+
+        self.s = tf.placeholder(tf.float32, [None] + self.state_size + [4], name='s')  # input State
+        self.s_ = tf.placeholder(tf.float32, [None] + self.state_size + [4], name='s_')  # input Next State
         self.r = tf.placeholder(tf.float32, [None, ], name='r')  # input Reward
         self.a = tf.placeholder(tf.int32, [None, ], name='a')  # input Action
 
-
-
-        # ------------------ build evaluate_net ------------------
         with tf.variable_scope('eval_net'):
-            conv_layer1 = conv2d(self.s, 16, kernel_size = [5, 5])
-            max_pool1 = max_pool(conv_layer1, kernel_size = [2,2])
+            self.q_eval = tf.identity(self.network(self.s))
 
-            conv_layer2 = conv2d(max_pool1, 32, kernel_size = [3, 3],)
-            max_pool2 = max_pool(conv_layer2, kernel_size=[2,2])
-
-            conv_layer3 =  conv2d(max_pool2, 32, kernel_size = [3, 3])
-
-            conv_layer3_flatten = tf.reshape(conv_layer3, [-1, 30 * 32])
-
-            if not self.dueling:
-                hidden = fc(conv_layer3_flatten, 256, activation_fn=tf.nn.relu)
-                self.q_eval = fc(hidden, self.n_actions)
-
-        # ------------------ build target_net ------------------
         with tf.variable_scope('target_net'):
-            tar_conv_layer1 = conv2d(self.s, 16, kernel_size = [5, 5])
-            tar_max_pool1 = max_pool(tar_conv_layer1, kernel_size = [2,2])
-
-            tar_conv_layer2 = conv2d(tar_max_pool1, 32, kernel_size = [3, 3],)
-            tar_max_pool2 = max_pool(tar_conv_layer2, kernel_size=[2,2])
-
-            tar_conv_layer3 =  conv2d(tar_max_pool2, 32, kernel_size = [3, 3])
-
-            tar_conv_layer3_flatten = tf.reshape(tar_conv_layer3, [-1, 30 * 32])
-
-            if not self.dueling:
-                tar_hidden = fc(tar_conv_layer3_flatten, 256, activation_fn=tf.nn.relu)
-                self.q_next = fc(tar_hidden, self.n_actions)
+            self.q_next = tf.identity(self.target_network(self.s_))
 
         with tf.variable_scope('q_target'):
             q_target = self.r + self.gamma * tf.reduce_max(self.q_next, axis=1, name='Qmax_s_') # shape=(None, )

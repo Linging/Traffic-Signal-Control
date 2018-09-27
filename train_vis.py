@@ -36,7 +36,7 @@ def main(Agent, csv_summary):
         print("Episode:",episode,"Start")
 
         if episode >= 900 and episode % 10 == 0: env.test = True
-        state = env.state
+        state = env.init_state
 
         sum_reward = []
         env.set_flow_mode()
@@ -57,9 +57,9 @@ def main(Agent, csv_summary):
             info = actions
 
             if not env.test:
-                agent.store(env.state, action, reward, next_state, done, info)
+                agent.store(state, action, reward, next_state, done, info)
 
-            env.state = next_state
+            state = next_state
 
 
         ep_sum_reward = sum(sum_reward)
@@ -70,9 +70,9 @@ def main(Agent, csv_summary):
         if env.test:
             env.write_summary(episode, csv_summary)
 
-for learn_rate in [1e-4]:
-    for replay_size in [100000]:
-        for batch_size in [16]:
+for learn_rate in [0.00025]:
+    for replay_size in [10000]:
+        for batch_size in [32]:
             dir = "lr=" + str(learn_rate) + " rep=" \
                   + str(replay_size) + " bat=" + str(batch_size)
             csv_summary = "./dqn/" + dir
@@ -84,6 +84,6 @@ for learn_rate in [1e-4]:
 
             # Agent = DQN(16,learning_rate=learn_rate,memory_size=replay_size,
             #             batch_size=batch_size, tensorboard_logs=tensorboard_logs)
-            Agent = DeepQNetwork(n_actions=16, n_features=[8, 60, 2])
+            Agent = DeepQNetwork(n_actions=16)
 
             main(Agent, csv_summary)

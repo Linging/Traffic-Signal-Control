@@ -6,6 +6,7 @@ import random
 n_lanes = 8
 n_cells = 60
 frames = 2
+# from PIL import Image
 
 
 class VisEnv():
@@ -20,11 +21,13 @@ class VisEnv():
         # self.reward_func= "dif_of_global_v"
         # self.reward_func = "mixed_q_v"
         # self.reward_func = "absolute_mix_q_v"
-        self.reward_func = "simple"
+        # self.reward_func = "simple"
+        self.reward_func = "sparse"
         self.mode = "fixed flow"
+
         self.flow_rate = 400
 
-        self.error_summary = 0
+        self.counter = 0
         self.error_action = 0
 
 
@@ -47,7 +50,10 @@ class VisEnv():
         self.pre_n_queued = 0
         self.pre_action = np.zeros(self.n_cross)
         self.summary = [[],[],[]]
-        self.state = np.zeros([n_lanes,n_cells,frames])
+        # self.state = np.zeros([n_lanes,n_cells,frames])
+        '''Return last 4 frames'''
+        self.state = [np.zeros([84,84]) for _ in range(4)]
+        self.init_state = np.zeros([84,84,4])
         self.random_seed()
 
     def random_seed(self, seed = 7):
@@ -67,28 +73,32 @@ class VisEnv():
         else:
             pass
 
+    def all_red_time(self, actions, sec=5):
+        all_red_actions = np.zeros(self.n_cross)
+        for i in range(self.n_cross):
+            if self.pre_action[i] == actions[i]:
+                all_red_actions[i] = actions[i]
+            else:
+                "all red time"
+                all_red_actions[i] = 2
+
+        self.pre_action = actions
+
+        self.action(all_red_actions)
+        for _ in range(sec):
+            self.Vissim.Simulation.RunSingleStep()
+
     def step(self, actions, steps=5):
-        """"""
+        """All red time for clear the conflict area"""
         if self.all_red:
-            all_red_actions = np.zeros(self.n_cross)
-            for i in range(self.n_cross):
-                if self.pre_action[i] == actions[i]:
-                    all_red_actions[i] = actions[i]
-                else:
-                    "all red time"
-                    all_red_actions[i] = 2
-
-            self.pre_action = actions
-
-            self.action(all_red_actions)
-            for _ in range(5):
-                self.Vissim.Simulation.RunSingleStep()
+            self.all_red_time(actions)
 
         if self.action(actions):
             for _ in range(steps):
                 self.Vissim.Simulation.RunSingleStep()
 
-            self.next_state, self.current_v , valid = self.get_state()
+            # self.next_state, self.current_v, valid = self.get_state()
+            self.next_state, self.current_v, valid = self.get_state_atari_style()
 
             # unstable Vissim will give nan data sometimes.
             if not valid:
@@ -98,11 +108,11 @@ class VisEnv():
         else:
             print("sigal set failed!")
 
-        self.n_queued = self.get_queued()
         reward = self.cal_reward()
-        self.pre_n_queued = self.n_queued
 
         if self.test:
+            self.n_queued = self.get_queued()
+            self.pre_n_queued = self.n_queued
             self.trav_time = self.travel_time()
             self.record()
 
@@ -134,7 +144,7 @@ class VisEnv():
             group[0].SetAttValue('type', 3)
 
     def down(self):
-        if self.pre_n_queued >= 100:
+        if self.pre_v <= 20:
             return True
         else:
             return False
@@ -156,8 +166,10 @@ class VisEnv():
             return float(reward)
         elif self.reward_func == 'simple':
             self.pre_v = self.current_v
-            return self.pre_v / 50
-
+            return self.pre_v / 100
+        elif self.reward_func == 'sparse':
+            self.pre_v = self.current_v
+            return 0.
 
     def get_state(self):
         cell_length = 10
@@ -198,6 +210,65 @@ class VisEnv():
         if error >= 5:
             valid = False
         return state, speed, valid
+
+    def get_state_atari_style(self):
+        new_frame, speed = self.get_new_frame_atari_style()
+        # img = Image.fromarray(new_frame * 50)
+        # img = img.convert('L')
+        # img.save('./logs/'+str(self.counter)+'.png',"PNG")
+        self.state.append(new_frame)
+        self.state.pop(0)
+        valid = True
+        state = np.array(self.state).transpose((1,2,0))
+        return state, speed, valid
+
+    def get_new_frame_atari_style(self):
+        new_frame = np.zeros([84,84])
+        temp = np.zeros([8,75])
+        cell_length = 10
+        n_cells = 75
+        lane = 0
+        speed = []
+        self.counter += 1
+
+
+        for link in self.links:
+            vehicles = link.GetVehicles()
+
+            for v in vehicles:
+                # vissim is shit.
+                try:
+                    poi, s = v.AttValue("TOTALDISTANCE"), v.AttValue("SPEED")
+                except:
+                    break
+                if np.isnan(poi) or np.isnan(s):
+                    break
+                else:
+                    i = int(poi/cell_length)
+                    if i < n_cells and i >= 0:
+                        if lane in [1,7,3,5]:
+                            i = 74 - i
+                        temp[lane, i] += 1
+                        speed.append(s)
+            lane += 1
+        '''Avg of speed'''
+        if len(speed) == 0:
+            speed = 0
+        else:
+            speed = np.array(speed).mean()
+            # avoid strange big value.
+            if speed > 60 or speed < 0:
+                speed = 0
+
+        '''Rebuild the state frame'''
+
+        for lane, target in zip([1,0,7,6],[20,21,50,51]):
+            new_frame[target][:75] = temp[lane]
+        new_frame = new_frame.T
+        for lane, target in zip([2,3,4,5],[20,21,50,51]):
+            new_frame[target][:75] = temp[lane]
+        new_frame = new_frame.T
+        return new_frame, speed
 
     def get_queued(self):
         queued_vehicles = self.vehicles.GetQueued()
